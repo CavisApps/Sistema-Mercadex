@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { Product } from '../types';
-import { Plus, Edit, Trash2, Search, Wand2 } from 'lucide-react';
-import { generateProductDescription } from '../services/geminiService';
+import { Plus, Edit, Trash2, Search } from 'lucide-react';
 
 const Products = () => {
   const { products, addProduct, updateProduct, deleteProduct } = useStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filter, setFilter] = useState('');
-  const [loadingAi, setLoadingAi] = useState(false);
 
   const emptyForm: Omit<Product, 'id'> = {
     barcode: '', name: '', unit: 'un', costPrice: 0, margin: 0, sellPrice: 0, 
@@ -73,16 +71,6 @@ const Products = () => {
     setIsModalOpen(false);
     setEditingId(null);
     setFormData(emptyForm);
-  };
-
-  const handleAiDescription = async () => {
-    if (!formData.name) return alert('Preencha o nome primeiro');
-    if (!process.env.API_KEY) return alert('API_KEY não configurada');
-    
-    setLoadingAi(true);
-    const desc = await generateProductDescription(formData.name, formData.category);
-    setFormData(prev => ({ ...prev, description: desc }));
-    setLoadingAi(false);
   };
 
   const filteredProducts = products.filter(p => 
@@ -211,9 +199,6 @@ const Products = () => {
               <div className="col-span-2">
                  <div className="flex justify-between items-center mb-1">
                     <label className="block text-sm font-medium text-slate-700">Descrição</label>
-                    <button type="button" onClick={handleAiDescription} className="text-xs flex items-center gap-1 text-purple-600 hover:text-purple-800">
-                       <Wand2 size={12}/> {loadingAi ? 'Gerando...' : 'Gerar com IA'}
-                    </button>
                  </div>
                  <textarea name="description" value={formData.description || ''} onChange={(e) => setFormData(prev => ({...prev, description: e.target.value}))} className="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none" rows={2} />
               </div>

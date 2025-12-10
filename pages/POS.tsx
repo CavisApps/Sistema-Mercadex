@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useStore } from '../context/StoreContext';
 import { Product, CartItem, PaymentMethod, Customer } from '../types';
-import { Search, ShoppingCart, Trash2, Printer, CheckCircle, CreditCard, Banknote, QrCode } from 'lucide-react';
+import { ShoppingCart, Trash2, Printer, CheckCircle, CreditCard, Banknote, QrCode } from 'lucide-react';
 
 const Receipt = ({ sale, onClose }: { sale: any, onClose: () => void }) => (
   <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
@@ -52,7 +52,7 @@ const Receipt = ({ sale, onClose }: { sale: any, onClose: () => void }) => (
 
 const POS = () => {
   const { products, customers, addSale } = useStore();
-  const [barcodeInput, setBarcodeInput] = useState('');
+  const [inputValue, setInputValue] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.MONEY);
@@ -66,6 +66,11 @@ const POS = () => {
   }, [cart]);
 
   const addToCart = (product: Product) => {
+    if (product.stock <= 0) {
+      alert('Produto sem estoque!');
+      return;
+    }
+
     setCart(prev => {
       const existing = prev.find(i => i.id === product.id);
       if (existing) {
@@ -78,16 +83,41 @@ const POS = () => {
     });
   };
 
-  const handleBarcodeSubmit = (e: React.FormEvent) => {
+  const displayedProducts = useMemo(() => {
+    if (!inputValue) return products.slice(0, 9); // Show "recent" or first 9 if no search
+    const lower = inputValue.toLowerCase();
+    return products.filter(p => 
+      p.name.toLowerCase().includes(lower) || 
+      p.barcode.includes(lower)
+    );
+  }, [inputValue, products]);
+
+  const handleInputSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const product = products.find(p => p.barcode === barcodeInput || p.id === barcodeInput);
-    if (product) {
-      if (product.stock <= 0) {
-        alert('Produto sem estoque!');
-      } else {
-        addToCart(product);
-      }
-      setBarcodeInput('');
+    if (!inputValue) return;
+
+    // 1. Try exact barcode match first
+    const exactBarcode = products.find(p => p.barcode === inputValue);
+    if (exactBarcode) {
+      addToCart(exactBarcode);
+      setInputValue('');
+      return;
+    }
+
+    // 2. Try exact name match
+    const exactName = products.find(p => p.name.toLowerCase() === inputValue.toLowerCase());
+    if (exactName) {
+      addToCart(exactName);
+      setInputValue('');
+      return;
+    }
+
+    // 3. Fallback to filtered list logic
+    if (displayedProducts.length === 1) {
+      addToCart(displayedProducts[0]);
+      setInputValue('');
+    } else if (displayedProducts.length > 1) {
+      // If multiple items, we do nothing and let user click one from the grid
     } else {
       alert('Produto não encontrado');
     }
@@ -125,15 +155,15 @@ const POS = () => {
       {/* Left: Input & Product List Simulation */}
       <div className="flex-1 flex flex-col gap-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <form onSubmit={handleBarcodeSubmit} className="flex gap-4">
+          <form onSubmit={handleInputSubmit} className="flex gap-4">
             <div className="relative flex-1">
               <QrCode className="absolute left-3 top-3 text-slate-400" />
               <input
                 ref={inputRef}
                 autoFocus
-                value={barcodeInput}
-                onChange={(e) => setBarcodeInput(e.target.value)}
-                placeholder="Escaneie ou digite o código de barras..."
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Escaneie ou digite o nome do produto..."
                 className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-lg"
               />
             </div>
@@ -143,14 +173,16 @@ const POS = () => {
           </form>
         </div>
 
-        {/* Quick Select Grid (Optional visual aid) */}
+        {/* Search Results / Quick Select Grid */}
         <div className="flex-1 bg-white p-6 rounded-xl shadow-sm border border-slate-200 overflow-y-auto">
-          <h3 className="text-sm font-semibold text-slate-500 uppercase mb-4">Produtos Recentes</h3>
+          <h3 className="text-sm font-semibold text-slate-500 uppercase mb-4">
+            {inputValue ? `Resultados (${displayedProducts.length})` : 'Produtos Recentes'}
+          </h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {products.slice(0, 9).map(p => (
+            {displayedProducts.map(p => (
               <button 
                 key={p.id} 
-                onClick={() => addToCart(p)}
+                onClick={() => { addToCart(p); setInputValue(''); }}
                 className="p-4 border border-slate-100 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition text-left group"
               >
                 <p className="font-bold text-slate-700 group-hover:text-blue-700 truncate">{p.name}</p>
@@ -160,6 +192,11 @@ const POS = () => {
                 </div>
               </button>
             ))}
+            {displayedProducts.length === 0 && (
+              <div className="col-span-full text-center text-slate-400 py-8">
+                Nenhum produto encontrado.
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -198,16 +235,23 @@ const POS = () => {
 
         <div className="p-4 bg-slate-50 border-t border-slate-200 space-y-4">
           {/* Customer Select */}
-          <select 
-            className="w-full p-2 text-sm border border-slate-300 rounded outline-none"
-            onChange={(e) => setSelectedCustomer(customers.find(c => c.id === e.target.value) || null)}
-            defaultValue=""
-          >
-            <option value="">Consumidor Final (Sem cadastro)</option>
-            {customers.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-500">Cliente</label>
+            <select 
+              className="w-full p-2 text-sm border border-slate-300 rounded outline-none bg-white"
+              value={selectedCustomer?.id || ''}
+              onChange={(e) => {
+                const customerId = e.target.value;
+                const customer = customers.find(c => c.id === customerId);
+                setSelectedCustomer(customer || null);
+              }}
+            >
+              <option value="">Consumidor Final (Sem cadastro)</option>
+              {customers.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
 
           {/* Payment Method */}
           <div className="grid grid-cols-3 gap-2">

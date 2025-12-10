@@ -1,11 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useStore } from '../context/StoreContext';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
-  LineChart, Line
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
 } from 'recharts';
-import { DollarSign, ShoppingBag, Users, AlertTriangle, Sparkles, BarChart3 } from 'lucide-react';
-import { analyzeSalesTrends } from '../services/geminiService';
+import { DollarSign, ShoppingBag, Users, AlertTriangle, BarChart3 } from 'lucide-react';
 
 const Card = ({ title, value, sub, icon: Icon, color }: any) => (
   <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-start justify-between">
@@ -24,14 +22,11 @@ const Card = ({ title, value, sub, icon: Icon, color }: any) => (
 
 const Dashboard = () => {
   const { sales, purchases, products, customers } = useStore();
-  const [aiInsight, setAiInsight] = useState<string>('');
-  const [loadingAi, setLoadingAi] = useState(false);
 
   // Calcs
   const totalSales = useMemo(() => sales.reduce((acc, s) => acc + s.total, 0), [sales]);
   const totalPurchases = useMemo(() => purchases.reduce((acc, p) => acc + p.total, 0), [purchases]);
   const estimatedProfit = totalSales - totalPurchases;
-  const lowStockCount = useMemo(() => products.filter(p => p.stock <= p.minStock).length, [products]);
   
   // Chart Data Preparation
   const last7Days = [...Array(7)].map((_, i) => {
@@ -49,31 +44,6 @@ const Dashboard = () => {
       Compras: dayPurchases
     };
   });
-
-  const topProducts = useMemo(() => {
-    const map: Record<string, number> = {};
-    sales.forEach(s => {
-      s.items.forEach(i => {
-        map[i.name] = (map[i.name] || 0) + i.quantity;
-      });
-    });
-    return Object.entries(map)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 5)
-      .map(([name, qtd]) => ({ name, qtd }));
-  }, [sales]);
-
-  const handleGetInsight = async () => {
-    if (!process.env.API_KEY) {
-      alert("Configure a API_KEY para usar recursos de IA");
-      return;
-    }
-    setLoadingAi(true);
-    const summary = `Vendas totais: ${totalSales}. Lucro: ${estimatedProfit}. Produtos com estoque baixo: ${lowStockCount}. Top produto: ${topProducts[0]?.name || 'Nenhum'}.`;
-    const insight = await analyzeSalesTrends(summary);
-    setAiInsight(insight);
-    setLoadingAi(false);
-  };
 
   return (
     <div className="space-y-6">
@@ -135,7 +105,7 @@ const Dashboard = () => {
               <AlertTriangle className="text-red-500" size={20} />
               Alertas de Estoque
             </h3>
-            <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
               {products.filter(p => p.stock <= p.minStock).length === 0 ? (
                  <p className="text-slate-500 text-sm">Estoque saudável.</p>
               ) : (
@@ -152,28 +122,6 @@ const Dashboard = () => {
                 ))
               )}
             </div>
-          </div>
-
-          {/* AI Insights */}
-          <div className="bg-gradient-to-br from-indigo-600 to-purple-700 text-white p-6 rounded-xl shadow-lg">
-             <div className="flex items-center justify-between mb-4">
-               <h3 className="font-bold flex items-center gap-2">
-                 <Sparkles size={18} className="text-yellow-300" />
-                 Smart Insights
-               </h3>
-               {!aiInsight && (
-                 <button 
-                  onClick={handleGetInsight} 
-                  disabled={loadingAi}
-                  className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition"
-                 >
-                   {loadingAi ? 'Gerando...' : 'Analisar'}
-                 </button>
-               )}
-             </div>
-             <p className="text-sm leading-relaxed text-indigo-100">
-               {aiInsight || "Clique em analisar para receber dicas de IA sobre como melhorar seu lucro com base nos dados atuais."}
-             </p>
           </div>
         </div>
       </div>
