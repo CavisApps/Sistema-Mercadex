@@ -27,6 +27,11 @@ const INITIAL_PRODUCTS: Product[] = [
   { id: '3', barcode: '789123458', name: 'Coca-Cola 2L', unit: 'un', costPrice: 7, margin: 42.85, sellPrice: 10, stock: 100, minStock: 20, category: 'Bebidas' },
 ];
 
+const INITIAL_CUSTOMERS: Customer[] = [
+  { id: '1', name: 'João Silva', cpf: '123.456.789-00', phone: '(11) 99999-9999', address: 'Rua das Flores, 123', createdAt: new Date().toISOString() },
+  { id: '2', name: 'Maria Oliveira', cpf: '987.654.321-00', phone: '(11) 88888-8888', address: 'Av. Paulista, 1000', createdAt: new Date().toISOString() },
+];
+
 const INITIAL_USERS: User[] = [
   { id: '1', name: 'Admin', email: 'admin@market.com', password: '123', role: UserRole.ADMIN },
   { id: '2', name: 'Operador', email: 'op@market.com', password: '123', role: UserRole.OPERATOR },
@@ -45,7 +50,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const [customers, setCustomers] = useState<Customer[]>(() => {
     const saved = localStorage.getItem('mm_customers');
-    return saved ? JSON.parse(saved) : [];
+    // Use INITIAL_CUSTOMERS if no data exists
+    return saved ? JSON.parse(saved) : INITIAL_CUSTOMERS;
   });
 
   const [sales, setSales] = useState<Sale[]>(() => {

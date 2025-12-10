@@ -31,7 +31,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const getPageTitle = () => {
     const current = navItems.find(i => i.path === location.pathname);
-    return current ? current.label : 'MiniMarket Pro';
+    return current ? current.label : 'Mercado Fácil';
   };
 
   return (
@@ -42,7 +42,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="bg-blue-500 p-2 rounded-lg">
             <Receipt size={24} className="text-white" />
           </div>
-          <h1 className="text-xl font-bold tracking-tight">MiniMarket</h1>
+          <h1 className="text-xl font-bold tracking-tight">Mercado Fácil</h1>
         </div>
         
         <nav className="flex-1 py-6 px-3 space-y-1">

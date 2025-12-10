@@ -7,7 +7,7 @@ const Receipt = ({ sale, onClose }: { sale: any, onClose: () => void }) => (
   <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
     <div className="bg-white p-6 w-80 shadow-2xl rounded">
       <div id="receipt-print" className="text-center font-mono text-xs text-black">
-        <h2 className="text-lg font-bold uppercase mb-1">MiniMarket Pro</h2>
+        <h2 className="text-lg font-bold uppercase mb-1">Mercado Fácil</h2>
         <p>CNPJ: 12.345.678/0001-90</p>
         <p className="mb-4">Rua das Flores, 123 - Centro</p>
         
@@ -238,12 +238,16 @@ const POS = () => {
           <div className="space-y-1">
             <label className="text-xs font-semibold text-slate-500">Cliente</label>
             <select 
-              className="w-full p-2 text-sm border border-slate-300 rounded outline-none bg-white"
+              className="w-full p-2 text-sm border border-slate-300 rounded outline-none bg-white focus:ring-2 focus:ring-blue-500"
               value={selectedCustomer?.id || ''}
               onChange={(e) => {
                 const customerId = e.target.value;
-                const customer = customers.find(c => c.id === customerId);
-                setSelectedCustomer(customer || null);
+                if (customerId === '') {
+                    setSelectedCustomer(null);
+                } else {
+                    const customer = customers.find(c => c.id === customerId);
+                    setSelectedCustomer(customer || null);
+                }
               }}
             >
               <option value="">Consumidor Final (Sem cadastro)</option>

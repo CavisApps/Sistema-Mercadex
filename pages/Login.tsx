@@ -23,7 +23,7 @@ const Login = () => {
     <div className="min-h-screen bg-slate-100 flex items-center justify-center">
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-200">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">MiniMarket Pro</h1>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">Mercado Fácil</h1>
           <p className="text-slate-500">Faça login para acessar o sistema</p>
         </div>
 
