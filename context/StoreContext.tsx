@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Product, User, Sale, Purchase, Customer, UserRole } from '../types';
+import { Product, User, Sale, Purchase, Customer, UserRole, Supplier, CashMovement } from '../types';
 
 interface StoreContextType {
   user: User | null;
@@ -12,10 +12,15 @@ interface StoreContextType {
   getProductByBarcode: (code: string) => Product | undefined;
   customers: Customer[];
   addCustomer: (c: Customer) => void;
+  suppliers: Supplier[];
+  addSupplier: (s: Supplier) => void;
+  deleteSupplier: (id: string) => void;
   sales: Sale[];
   addSale: (s: Sale) => void;
   purchases: Purchase[];
   addPurchase: (p: Purchase) => void;
+  cashMovements: CashMovement[];
+  addCashMovement: (m: CashMovement) => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -30,6 +35,11 @@ const INITIAL_PRODUCTS: Product[] = [
 const INITIAL_CUSTOMERS: Customer[] = [
   { id: '1', name: 'João Silva', cpf: '123.456.789-00', phone: '(11) 99999-9999', address: 'Rua das Flores, 123', createdAt: new Date().toISOString() },
   { id: '2', name: 'Maria Oliveira', cpf: '987.654.321-00', phone: '(11) 88888-8888', address: 'Av. Paulista, 1000', createdAt: new Date().toISOString() },
+];
+
+const INITIAL_SUPPLIERS: Supplier[] = [
+  { id: '1', name: 'Distribuidora ABC', cnpj: '11.111.111/0001-11', contact: 'Carlos', phone: '(11) 3333-3333' },
+  { id: '2', name: 'Bebidas X', cnpj: '22.222.222/0001-22', contact: 'Fernanda', phone: '(11) 4444-4444' },
 ];
 
 const INITIAL_USERS: User[] = [
@@ -50,8 +60,12 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const [customers, setCustomers] = useState<Customer[]>(() => {
     const saved = localStorage.getItem('mm_customers');
-    // Use INITIAL_CUSTOMERS if no data exists
     return saved ? JSON.parse(saved) : INITIAL_CUSTOMERS;
+  });
+
+  const [suppliers, setSuppliers] = useState<Supplier[]>(() => {
+    const saved = localStorage.getItem('mm_suppliers');
+    return saved ? JSON.parse(saved) : INITIAL_SUPPLIERS;
   });
 
   const [sales, setSales] = useState<Sale[]>(() => {
@@ -64,12 +78,19 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [cashMovements, setCashMovements] = useState<CashMovement[]>(() => {
+    const saved = localStorage.getItem('mm_cash_movements');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   // Persistence
   useEffect(() => localStorage.setItem('mm_user', JSON.stringify(user)), [user]);
   useEffect(() => localStorage.setItem('mm_products', JSON.stringify(products)), [products]);
   useEffect(() => localStorage.setItem('mm_customers', JSON.stringify(customers)), [customers]);
+  useEffect(() => localStorage.setItem('mm_suppliers', JSON.stringify(suppliers)), [suppliers]);
   useEffect(() => localStorage.setItem('mm_sales', JSON.stringify(sales)), [sales]);
   useEffect(() => localStorage.setItem('mm_purchases', JSON.stringify(purchases)), [purchases]);
+  useEffect(() => localStorage.setItem('mm_cash_movements', JSON.stringify(cashMovements)), [cashMovements]);
 
   const login = (email: string, pass: string) => {
     const found = INITIAL_USERS.find(u => u.email === email && u.password === pass);
@@ -92,6 +113,10 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const addCustomer = (c: Customer) => setCustomers(prev => [...prev, c]);
 
+  const addSupplier = (s: Supplier) => setSuppliers(prev => [...prev, s]);
+
+  const deleteSupplier = (id: string) => setSuppliers(prev => prev.filter(s => s.id !== id));
+
   const addSale = (s: Sale) => {
     setSales(prev => [...prev, s]);
     // Decrease stock
@@ -106,29 +131,30 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const addPurchase = (p: Purchase) => {
     setPurchases(prev => [...prev, p]);
-    // Increase stock and potentially update cost
+    // Increase stock
     setProducts(prev => prev.map(prod => {
       const boughtItem = p.items.find(i => i.productId === prod.id);
       if (boughtItem) {
-        // Simple Weighted Average Cost could be implemented here, but we will just keep the latest cost for simplicity or update stock only
         return { 
           ...prod, 
           stock: prod.stock + boughtItem.quantity,
-          // Optional: Update cost price to latest purchase price
-          // costPrice: boughtItem.unitCost 
         };
       }
       return prod;
     }));
   };
 
+  const addCashMovement = (m: CashMovement) => setCashMovements(prev => [...prev, m]);
+
   return (
     <StoreContext.Provider value={{
       user, login, logout,
       products, addProduct, updateProduct, deleteProduct, getProductByBarcode,
       customers, addCustomer,
+      suppliers, addSupplier, deleteSupplier,
       sales, addSale,
-      purchases, addPurchase
+      purchases, addPurchase,
+      cashMovements, addCashMovement
     }}>
       {children}
     </StoreContext.Provider>

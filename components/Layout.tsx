@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, ShoppingCart, Package, Users, 
-  BarChart3, LogOut, Receipt, ShoppingBag
+  BarChart3, LogOut, Receipt, ShoppingBag, Truck
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 
@@ -25,6 +25,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { label: 'PDV (Vendas)', path: '/pos', icon: <ShoppingCart size={20} /> },
     { label: 'Produtos', path: '/products', icon: <Package size={20} /> },
     { label: 'Compras', path: '/purchases', icon: <ShoppingBag size={20} /> },
+    { label: 'Fornecedores', path: '/suppliers', icon: <Truck size={20} /> },
     { label: 'Clientes', path: '/customers', icon: <Users size={20} /> },
     { label: 'Relatórios', path: '/reports', icon: <BarChart3 size={20} /> },
   ];
@@ -35,9 +36,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="flex h-screen w-full bg-slate-100 no-print">
+    <div className="flex h-screen w-full bg-slate-100">
       {/* Sidebar */}
-      <aside className="w-64 bg-slate-900 text-white flex flex-col shadow-xl">
+      <aside className="w-64 bg-slate-900 text-white flex flex-col shadow-xl no-print">
         <div className="p-6 flex items-center gap-2 border-b border-slate-700">
           <div className="bg-blue-500 p-2 rounded-lg">
             <Receipt size={24} className="text-white" />
@@ -84,7 +85,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Topbar */}
-        <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-8 shadow-sm">
+        <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-8 shadow-sm no-print">
           <h2 className="text-xl font-semibold text-slate-800">{getPageTitle()}</h2>
           <div className="text-sm text-slate-500">
             {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}

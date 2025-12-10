@@ -12,23 +12,26 @@
       }
       /* Print Styles */
       @media print {
+        body * {
+          visibility: hidden;
+        }
+        .printable-content, .printable-content * {
+          visibility: visible;
+        }
+        .printable-content {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          background-color: white;
+          color: black;
+        }
         .no-print {
           display: none !important;
         }
-        .print-only {
-          display: block !important;
-        }
-        body {
-          background-color: white;
-        }
         #root {
-          width: 100%;
-          margin: 0;
-          padding: 0;
+          display: block; /* Ensure root is not hidden if it has no-print */
         }
-      }
-      .print-only {
-        display: none;
       }
     </style>
   <script type="importmap">

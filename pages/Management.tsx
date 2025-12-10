@@ -6,8 +6,8 @@ import { jsPDF } from "jspdf";
 
 // --- PURCHASES COMPONENT ---
 const Purchases = () => {
-  const { products, addPurchase, purchases } = useStore();
-  const [supplier, setSupplier] = useState('');
+  const { products, addPurchase, purchases, suppliers } = useStore();
+  const [supplierId, setSupplierId] = useState('');
   const [items, setItems] = useState<{ productId: string, qty: number, cost: number }[]>([]);
   const [currentProduct, setCurrentProduct] = useState('');
   const [qty, setQty] = useState(1);
@@ -22,7 +22,11 @@ const Purchases = () => {
   };
 
   const finalizePurchase = () => {
-    if (items.length === 0 || !supplier) return;
+    if (items.length === 0 || !supplierId) return;
+    
+    const supplier = suppliers.find(s => s.id === supplierId);
+    if (!supplier) return;
+
     const purchaseItems = items.map(i => {
       const p = products.find(prod => prod.id === i.productId)!;
       return {
@@ -37,12 +41,13 @@ const Purchases = () => {
     addPurchase({
       id: Date.now().toString(),
       date: new Date().toISOString(),
-      supplier,
+      supplier: supplier.name, // Keeping name for history display simplicity
+      supplierId: supplier.id,
       items: purchaseItems,
       total: purchaseItems.reduce((acc, i) => acc + i.totalCost, 0)
     });
     setItems([]);
-    setSupplier('');
+    setSupplierId('');
     alert('Entrada de estoque realizada!');
   };
 
@@ -51,12 +56,21 @@ const Purchases = () => {
       <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
         <h3 className="text-lg font-bold mb-4">Nova Compra (Entrada)</h3>
         <div className="space-y-4">
-          <input 
-            placeholder="Fornecedor" 
-            value={supplier} 
-            onChange={e => setSupplier(e.target.value)}
-            className="w-full p-2 border rounded" 
-          />
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Fornecedor</label>
+            <select 
+              value={supplierId} 
+              onChange={e => setSupplierId(e.target.value)}
+              className="w-full p-2 border rounded border-slate-300"
+            >
+              <option value="">Selecione o Fornecedor...</option>
+              {suppliers.map(s => (
+                <option key={s.id} value={s.id}>{s.name} - {s.cnpj}</option>
+              ))}
+            </select>
+            {suppliers.length === 0 && <p className="text-xs text-red-500 mt-1">Nenhum fornecedor cadastrado.</p>}
+          </div>
+
           <div className="grid grid-cols-3 gap-2">
             <select 
               value={currentProduct} 
@@ -65,23 +79,30 @@ const Purchases = () => {
                   const p = products.find(prod => prod.id === e.target.value);
                   if(p) setCost(p.costPrice);
               }}
-              className="col-span-3 p-2 border rounded"
+              className="col-span-3 p-2 border rounded border-slate-300"
             >
               <option value="">Selecione o Produto</option>
               {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
-            <input type="number" placeholder="Qtd" value={qty} onChange={e => setQty(Number(e.target.value))} className="p-2 border rounded" />
-            <input type="number" placeholder="Custo Unit." value={cost} onChange={e => setCost(Number(e.target.value))} className="p-2 border rounded" />
-            <button onClick={handleAddItem} className="bg-blue-600 text-white rounded flex items-center justify-center"><Plus/></button>
+            <input type="number" placeholder="Qtd" value={qty} onChange={e => setQty(Number(e.target.value))} className="p-2 border rounded border-slate-300" />
+            <input type="number" placeholder="Custo Unit." value={cost} onChange={e => setCost(Number(e.target.value))} className="p-2 border rounded border-slate-300" />
+            <button onClick={handleAddItem} className="bg-blue-600 text-white rounded flex items-center justify-center hover:bg-blue-700"><Plus/></button>
           </div>
           
-          <div className="bg-slate-50 p-4 rounded h-40 overflow-auto">
+          <div className="bg-slate-50 p-4 rounded h-40 overflow-auto border border-slate-100">
+            {items.length === 0 && <p className="text-center text-sm text-slate-400 mt-10">Nenhum item adicionado.</p>}
             {items.map((i, idx) => {
               const p = products.find(prod => prod.id === i.productId);
-              return <div key={idx} className="flex justify-between text-sm border-b py-1"><span>{p?.name}</span><span>{i.qty}x R${i.cost}</span></div>
+              return <div key={idx} className="flex justify-between text-sm border-b border-slate-200 py-2"><span>{p?.name}</span><span>{i.qty}x R${i.cost}</span></div>
             })}
           </div>
-          <button onClick={finalizePurchase} className="w-full bg-green-600 text-white py-2 rounded font-bold">Confirmar Entrada</button>
+          <button 
+            onClick={finalizePurchase} 
+            disabled={!supplierId || items.length === 0}
+            className="w-full bg-green-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white py-2 rounded font-bold hover:bg-green-700 transition"
+          >
+            Confirmar Entrada
+          </button>
         </div>
       </div>
 
@@ -94,9 +115,10 @@ const Purchases = () => {
                 <span>{p.supplier}</span>
                 <span>R$ {p.total.toFixed(2)}</span>
               </div>
-              <p className="text-xs text-slate-500">{new Date(p.date).toLocaleDateString()}</p>
+              <p className="text-xs text-slate-500">{new Date(p.date).toLocaleDateString()} - {p.items.length} itens</p>
             </div>
           ))}
+          {purchases.length === 0 && <p className="text-slate-400 text-center py-10">Nenhuma compra registrada.</p>}
         </div>
       </div>
     </div>
@@ -163,7 +185,7 @@ const Reports = () => {
 
   const generatePDF = () => {
     const doc = new jsPDF();
-    doc.text("Relatório de Vendas - MiniMarket Pro", 10, 10);
+    doc.text("Relatório de Vendas - Mercado Fácil", 10, 10);
     
     let info = "Período: ";
     if (startDate && endDate) info += `${new Date(startDate).toLocaleDateString()} a ${new Date(endDate).toLocaleDateString()}`;

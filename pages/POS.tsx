@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useStore } from '../context/StoreContext';
-import { Product, CartItem, PaymentMethod, Customer } from '../types';
-import { ShoppingCart, Trash2, Printer, CheckCircle, CreditCard, Banknote, QrCode } from 'lucide-react';
+import { Product, CartItem, PaymentMethod, Customer, CashMovement, CashMovementType } from '../types';
+import { ShoppingCart, Trash2, Printer, CheckCircle, CreditCard, Banknote, QrCode, Wallet, ArrowDown, Lock } from 'lucide-react';
 
 const Receipt = ({ sale, onClose }: { sale: any, onClose: () => void }) => (
   <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
     <div className="bg-white p-6 w-80 shadow-2xl rounded">
-      <div id="receipt-print" className="text-center font-mono text-xs text-black">
+      <div id="receipt-print" className="text-center font-mono text-xs text-black printable-content">
         <h2 className="text-lg font-bold uppercase mb-1">Mercado Fácil</h2>
         <p>CNPJ: 12.345.678/0001-90</p>
         <p className="mb-4">Rua das Flores, 123 - Centro</p>
@@ -50,6 +50,127 @@ const Receipt = ({ sale, onClose }: { sale: any, onClose: () => void }) => (
   </div>
 );
 
+const CashControlModal = ({ onClose }: { onClose: () => void }) => {
+  const { cashMovements, addCashMovement, sales, user } = useStore();
+  const [amount, setAmount] = useState('');
+  const [description, setDescription] = useState('');
+  const [tab, setTab] = useState<'OPEN' | 'BLEED' | 'SUMMARY'>('SUMMARY');
+
+  // Filter movements for today
+  const today = new Date().toDateString();
+  const todayMovements = cashMovements.filter(m => new Date(m.date).toDateString() === today);
+  const todaySales = sales.filter(s => new Date(s.date).toDateString() === today);
+
+  const openingBalance = todayMovements.filter(m => m.type === 'OPEN').reduce((acc, m) => acc + m.amount, 0);
+  const bleeds = todayMovements.filter(m => m.type === 'BLEED').reduce((acc, m) => acc + m.amount, 0);
+  
+  // Only count CASH sales for the drawer balance
+  const cashSales = todaySales.filter(s => s.paymentMethod === PaymentMethod.MONEY).reduce((acc, s) => acc + s.total, 0);
+  
+  // Total sales (all methods) for reporting
+  const totalSales = todaySales.reduce((acc, s) => acc + s.total, 0);
+
+  const currentDrawerBalance = openingBalance + cashSales - bleeds;
+
+  const handleAction = (type: CashMovementType) => {
+    if (!amount) return;
+    const movement: CashMovement = {
+      id: Date.now().toString(),
+      type,
+      amount: parseFloat(amount),
+      description: description || (type === 'OPEN' ? 'Abertura de Caixa' : 'Sangria'),
+      date: new Date().toISOString(),
+      userId: user?.id || 'unknown'
+    };
+    addCashMovement(movement);
+    setAmount('');
+    setDescription('');
+    setTab('SUMMARY');
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white w-full max-w-md rounded-xl shadow-2xl overflow-hidden">
+        <div className="bg-slate-900 text-white p-4 flex justify-between items-center">
+          <h2 className="text-lg font-bold flex items-center gap-2"><Wallet size={20}/> Controle de Caixa</h2>
+          <button onClick={onClose} className="hover:text-red-400">✕</button>
+        </div>
+        
+        <div className="p-6">
+          {tab === 'SUMMARY' && (
+             <div className="space-y-6">
+               <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                  <div className="flex justify-between mb-2 text-sm text-slate-500">
+                    <span>Abertura (Fundo de Troco)</span>
+                    <span>R$ {openingBalance.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between mb-2 text-sm text-green-600">
+                    <span>Vendas (Dinheiro)</span>
+                    <span>+ R$ {cashSales.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between mb-2 text-sm text-red-500">
+                    <span>Sangrias (Retiradas)</span>
+                    <span>- R$ {bleeds.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between mt-4 pt-4 border-t border-slate-300 font-bold text-xl text-slate-800">
+                    <span>Saldo em Gaveta</span>
+                    <span>R$ {currentDrawerBalance.toFixed(2)}</span>
+                  </div>
+               </div>
+               
+               <div className="text-xs text-slate-500 text-center">
+                 Total Geral de Vendas Hoje: R$ {totalSales.toFixed(2)}
+               </div>
+
+               <div className="grid grid-cols-2 gap-3">
+                 <button onClick={() => setTab('OPEN')} className="bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 flex flex-col items-center">
+                    <Lock size={20} className="mb-1"/> Abertura / Reforço
+                 </button>
+                 <button onClick={() => setTab('BLEED')} className="bg-red-500 text-white py-3 rounded-lg hover:bg-red-600 flex flex-col items-center">
+                    <ArrowDown size={20} className="mb-1"/> Sangria
+                 </button>
+               </div>
+             </div>
+          )}
+
+          {(tab === 'OPEN' || tab === 'BLEED') && (
+            <div className="space-y-4">
+               <h3 className="font-bold text-slate-700 border-b pb-2">
+                 {tab === 'OPEN' ? 'Abertura de Caixa' : 'Realizar Sangria'}
+               </h3>
+               <div>
+                 <label className="block text-sm text-slate-600 mb-1">Valor (R$)</label>
+                 <input 
+                    type="number" 
+                    autoFocus
+                    value={amount} 
+                    onChange={e => setAmount(e.target.value)} 
+                    className="w-full p-3 border border-slate-300 rounded text-xl"
+                    placeholder="0.00"
+                 />
+               </div>
+               <div>
+                 <label className="block text-sm text-slate-600 mb-1">Descrição / Motivo</label>
+                 <input 
+                    type="text" 
+                    value={description} 
+                    onChange={e => setDescription(e.target.value)} 
+                    className="w-full p-3 border border-slate-300 rounded"
+                    placeholder={tab === 'OPEN' ? "Fundo de troco inicial" : "Pagamento de fornecedor, depósito..."}
+                 />
+               </div>
+               <div className="flex gap-3 pt-2">
+                 <button onClick={() => setTab('SUMMARY')} className="flex-1 bg-slate-200 text-slate-700 py-2 rounded">Cancelar</button>
+                 <button onClick={() => handleAction(tab)} className={`flex-1 text-white py-2 rounded ${tab === 'OPEN' ? 'bg-blue-600' : 'bg-red-500'}`}>Confirmar</button>
+               </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const POS = () => {
   const { products, customers, addSale } = useStore();
   const [inputValue, setInputValue] = useState('');
@@ -57,13 +178,16 @@ const POS = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.MONEY);
   const [completedSale, setCompletedSale] = useState<any | null>(null);
+  const [isCashModalOpen, setIsCashModalOpen] = useState(false);
   
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Focus on input always
   useEffect(() => {
-    inputRef.current?.focus();
-  }, [cart]);
+    if (!isCashModalOpen && !completedSale) {
+      inputRef.current?.focus();
+    }
+  }, [cart, isCashModalOpen, completedSale]);
 
   const addToCart = (product: Product) => {
     if (product.stock <= 0) {
@@ -151,9 +275,20 @@ const POS = () => {
   return (
     <div className="flex h-[calc(100vh-8rem)] gap-6">
       {completedSale && <Receipt sale={completedSale} onClose={() => setCompletedSale(null)} />}
+      {isCashModalOpen && <CashControlModal onClose={() => setIsCashModalOpen(false)} />}
 
       {/* Left: Input & Product List Simulation */}
       <div className="flex-1 flex flex-col gap-6">
+        <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+           <h2 className="font-bold text-lg text-slate-700">Frente de Caixa</h2>
+           <button 
+             onClick={() => setIsCashModalOpen(true)}
+             className="flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded hover:bg-slate-700 transition text-sm"
+           >
+             <Wallet size={16} /> Fluxo de Caixa / Sangria
+           </button>
+        </div>
+
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
           <form onSubmit={handleInputSubmit} className="flex gap-4">
             <div className="relative flex-1">

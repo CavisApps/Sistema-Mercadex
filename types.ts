@@ -34,6 +34,14 @@ export interface Customer {
   createdAt: string;
 }
 
+export interface Supplier {
+  id: string;
+  name: string;
+  cnpj: string;
+  contact: string;
+  phone: string;
+}
+
 export interface CartItem extends Product {
   quantity: number;
   subtotal: number;
@@ -59,7 +67,8 @@ export interface Sale {
 export interface Purchase {
   id: string;
   date: string;
-  supplier: string;
+  supplier: string; // Now stores Supplier Name or ID
+  supplierId?: string;
   items: {
     productId: string;
     productName: string;
@@ -68,4 +77,15 @@ export interface Purchase {
     totalCost: number;
   }[];
   total: number;
+}
+
+export type CashMovementType = 'OPEN' | 'BLEED' | 'CLOSE';
+
+export interface CashMovement {
+  id: string;
+  type: CashMovementType;
+  amount: number;
+  description: string;
+  date: string;
+  userId: string;
 }
