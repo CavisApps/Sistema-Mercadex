@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, ShoppingCart, Package, Users, 
-  BarChart3, LogOut, Receipt, ShoppingBag, Truck
+  BarChart3, LogOut, ShoppingBag, Truck, Search, Bell, Settings, HelpCircle, Menu
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 
@@ -21,82 +21,92 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   const navItems = [
-    { label: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
+    { label: 'Visão Geral', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
     { label: 'PDV (Vendas)', path: '/pos', icon: <ShoppingCart size={20} /> },
-    { label: 'Produtos', path: '/products', icon: <Package size={20} /> },
+    { label: 'Catálogo', path: '/products', icon: <Package size={20} /> },
     { label: 'Compras', path: '/purchases', icon: <ShoppingBag size={20} /> },
-    { label: 'Fornecedores', path: '/suppliers', icon: <Truck size={20} /> },
+    { label: 'Estoque', path: '/suppliers', icon: <Truck size={20} /> }, // Using Suppliers page as Stock/Supply management
     { label: 'Clientes', path: '/customers', icon: <Users size={20} /> },
     { label: 'Relatórios', path: '/reports', icon: <BarChart3 size={20} /> },
   ];
 
-  const getPageTitle = () => {
-    const current = navItems.find(i => i.path === location.pathname);
-    return current ? current.label : 'Mercado Fácil';
-  };
-
   return (
-    <div className="flex h-screen w-full bg-slate-100">
-      {/* Sidebar */}
-      <aside className="w-64 bg-slate-900 text-white flex flex-col shadow-xl no-print">
-        <div className="p-6 flex items-center gap-2 border-b border-slate-700">
-          <div className="bg-blue-500 p-2 rounded-lg">
-            <Receipt size={24} className="text-white" />
-          </div>
-          <h1 className="text-xl font-bold tracking-tight">Mercado Fácil</h1>
+    <div className="flex h-screen w-full bg-slate-100 font-sans">
+      {/* Top Header - Dark like MarketUP */}
+      <header className="fixed top-0 left-0 right-0 h-16 bg-slate-900 text-white flex items-center justify-between px-4 z-50 shadow-md no-print">
+        <div className="flex items-center gap-4 w-64">
+           {/* Logo Area */}
+           <div className="flex items-center gap-2 font-bold text-xl tracking-tight">
+             <div className="bg-green-500 p-1 rounded text-slate-900">
+               <ShoppingCart size={20} strokeWidth={3} />
+             </div>
+             <span>Mercado<span className="text-green-500">Fácil</span></span>
+           </div>
         </div>
-        
-        <nav className="flex-1 py-6 px-3 space-y-1">
+
+        {/* Central Search Bar */}
+        <div className="flex-1 max-w-2xl mx-4">
+          <div className="relative">
+            <input 
+              type="text" 
+              placeholder="Procure por produtos, clientes ou pedidos..." 
+              className="w-full bg-slate-800 text-slate-200 border-none rounded-full py-2 pl-10 pr-4 focus:ring-2 focus:ring-green-500 outline-none text-sm placeholder-slate-500 transition-all"
+            />
+            <Search className="absolute left-3 top-2 text-slate-500" size={18} />
+          </div>
+        </div>
+
+        {/* Right Actions */}
+        <div className="flex items-center gap-4">
+          <button className="text-slate-400 hover:text-white transition"><Bell size={20} /></button>
+          <button className="text-slate-400 hover:text-white transition"><Settings size={20} /></button>
+          <button className="text-slate-400 hover:text-white transition"><HelpCircle size={20} /></button>
+          
+          <div className="h-8 w-px bg-slate-700 mx-2"></div>
+
+          <div className="flex items-center gap-3 cursor-pointer group relative" onClick={handleLogout} title="Sair">
+             <div className="text-right hidden md:block leading-tight">
+               <p className="text-sm font-semibold text-white">{user?.name}</p>
+               <p className="text-xs text-green-500 uppercase">{user?.role}</p>
+             </div>
+             <div className="w-9 h-9 rounded-full bg-green-600 flex items-center justify-center text-white font-bold border-2 border-slate-800 group-hover:border-green-400 transition">
+               {user?.name.charAt(0)}
+             </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Sidebar */}
+      <aside className="fixed left-0 top-16 bottom-0 w-64 bg-slate-800 text-slate-300 flex flex-col shadow-xl z-40 no-print transition-all">
+        <nav className="flex-1 py-6 space-y-1 overflow-y-auto">
           {navItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
               className={({ isActive }) => `
-                flex items-center gap-3 px-4 py-3 rounded-lg transition-colors
-                ${isActive ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}
+                flex items-center gap-3 px-6 py-3 transition-all border-l-4
+                ${isActive 
+                  ? 'bg-slate-700 text-white border-green-500' 
+                  : 'border-transparent hover:bg-slate-700/50 hover:text-white'}
               `}
             >
-              {item.icon}
-              <span className="font-medium">{item.label}</span>
+              <div className={({ isActive }: any) => isActive ? "text-green-400" : "text-slate-400"}>
+                {item.icon}
+              </div>
+              <span className="font-medium text-sm">{item.label}</span>
             </NavLink>
           ))}
         </nav>
-
-        <div className="p-4 border-t border-slate-700">
-          <div className="flex items-center gap-3 mb-4 px-2">
-            <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-lg font-bold">
-              {user?.name.charAt(0)}
-            </div>
-            <div>
-              <p className="text-sm font-semibold">{user?.name}</p>
-              <p className="text-xs text-slate-400 capitalize">{user?.role.toLowerCase()}</p>
-            </div>
-          </div>
-          <button 
-            onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-red-600/20 hover:text-red-400 text-slate-400 py-2 rounded transition-colors"
-          >
-            <LogOut size={16} />
-            Sair
-          </button>
+        
+        <div className="p-4 bg-slate-900 border-t border-slate-700">
+           <p className="text-xs text-center text-slate-500">v1.0.2 - Mercado Fácil</p>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Topbar */}
-        <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-8 shadow-sm no-print">
-          <h2 className="text-xl font-semibold text-slate-800">{getPageTitle()}</h2>
-          <div className="text-sm text-slate-500">
-            {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-          </div>
-        </header>
-
-        {/* Scrollable Content */}
-        <div className="flex-1 overflow-auto p-8">
-          <div className="max-w-7xl mx-auto">
-            {children}
-          </div>
+      {/* Main Content Area */}
+      <main className="ml-64 mt-16 w-full p-6 overflow-y-auto h-[calc(100vh-4rem)] bg-slate-100">
+        <div className="max-w-7xl mx-auto">
+           {children}
         </div>
       </main>
     </div>
