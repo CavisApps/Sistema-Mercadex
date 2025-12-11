@@ -4,7 +4,7 @@ import { useStore } from '../context/StoreContext';
 import { Lock, User, ShoppingCart } from 'lucide-react';
 
 const Login = () => {
-  const [email, setEmail] = useState('admin@market.com');
+  const [email, setEmail] = useState('teste@market.com');
   const [password, setPassword] = useState('123');
   const [error, setError] = useState('');
   const { login } = useStore();
@@ -15,7 +15,7 @@ const Login = () => {
     if (login(email, password)) {
       navigate('/dashboard');
     } else {
-      setError('Credenciais inválidas. Tente admin@market.com / 123');
+      setError('Credenciais inválidas.');
     }
   };
 
@@ -81,12 +81,7 @@ const Login = () => {
           </button>
         </form>
         
-        <div className="mt-8 text-center border-t border-slate-100 pt-4">
-           <p className="text-xs text-slate-400 mb-2">Credenciais de Acesso (Demo)</p>
-           <div className="inline-block bg-slate-100 px-4 py-2 rounded text-slate-600 text-xs font-mono">
-             admin@market.com &nbsp;|&nbsp; 123
-           </div>
-        </div>
+        {/* Footer Removed as requested */}
       </div>
     </div>
   );

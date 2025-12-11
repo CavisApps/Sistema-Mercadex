@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, ShoppingCart, Package, Users, 
-  BarChart3, LogOut, ShoppingBag, Truck, Search, Bell, Settings, HelpCircle, Menu
+  BarChart3, ShoppingBag, Truck, Search, Menu
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 
@@ -13,7 +13,6 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, logout } = useStore();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const handleLogout = () => {
     logout();
@@ -23,9 +22,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navItems = [
     { label: 'Visão Geral', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
     { label: 'PDV (Vendas)', path: '/pos', icon: <ShoppingCart size={20} /> },
-    { label: 'Catálogo', path: '/products', icon: <Package size={20} /> },
+    { label: 'Cadastro de Produtos', path: '/products', icon: <Package size={20} /> }, // Renamed from Catálogo
     { label: 'Compras', path: '/purchases', icon: <ShoppingBag size={20} /> },
-    { label: 'Estoque', path: '/suppliers', icon: <Truck size={20} /> }, // Using Suppliers page as Stock/Supply management
+    { label: 'Controle de Estoque', path: '/stock', icon: <Truck size={20} /> }, // Updated path and label
     { label: 'Clientes', path: '/customers', icon: <Users size={20} /> },
     { label: 'Relatórios', path: '/reports', icon: <BarChart3 size={20} /> },
   ];
@@ -56,12 +55,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </div>
 
-        {/* Right Actions */}
+        {/* Right Actions - REMOVED BELL, SETTINGS, HELP as requested */}
         <div className="flex items-center gap-4">
-          <button className="text-slate-400 hover:text-white transition"><Bell size={20} /></button>
-          <button className="text-slate-400 hover:text-white transition"><Settings size={20} /></button>
-          <button className="text-slate-400 hover:text-white transition"><HelpCircle size={20} /></button>
-          
           <div className="h-8 w-px bg-slate-700 mx-2"></div>
 
           <div className="flex items-center gap-3 cursor-pointer group relative" onClick={handleLogout} title="Sair">
@@ -99,7 +94,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </nav>
         
         <div className="p-4 bg-slate-900 border-t border-slate-700">
-           <p className="text-xs text-center text-slate-500">v1.0.2 - Mercado Fácil</p>
+           <p className="text-xs text-center text-slate-500">v1.1.0 - Mercado Fácil</p>
         </div>
       </aside>
 

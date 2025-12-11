@@ -51,7 +51,8 @@ export enum PaymentMethod {
   MONEY = 'DINHEIRO',
   CREDIT = 'CARTAO_CREDITO',
   DEBIT = 'CARTAO_DEBITO',
-  PIX = 'PIX'
+  PIX = 'PIX',
+  FIADO = 'FIADO'
 }
 
 export interface Sale {

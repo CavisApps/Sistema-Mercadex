@@ -43,8 +43,7 @@ const INITIAL_SUPPLIERS: Supplier[] = [
 ];
 
 const INITIAL_USERS: User[] = [
-  { id: '1', name: 'Admin', email: 'admin@market.com', password: '123', role: UserRole.ADMIN },
-  { id: '2', name: 'Operador', email: 'op@market.com', password: '123', role: UserRole.OPERATOR },
+  { id: '1', name: 'Teste', email: 'teste@market.com', password: '123', role: UserRole.ADMIN },
 ];
 
 export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) => {

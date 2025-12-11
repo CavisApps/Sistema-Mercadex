@@ -1,17 +1,21 @@
 import React, { useState, useMemo } from 'react';
 import { useStore } from '../context/StoreContext';
-import { Purchase, Customer } from '../types';
+import { Purchase, Customer, Supplier } from '../types';
 import { Plus, Download, FileText, UserPlus, Phone, Calendar } from 'lucide-react';
 import { jsPDF } from "jspdf"; 
 
 // --- PURCHASES COMPONENT ---
 const Purchases = () => {
-  const { products, addPurchase, purchases, suppliers } = useStore();
+  const { products, addPurchase, purchases, suppliers, addSupplier } = useStore();
   const [supplierId, setSupplierId] = useState('');
   const [items, setItems] = useState<{ productId: string, qty: number, cost: number }[]>([]);
   const [currentProduct, setCurrentProduct] = useState('');
   const [qty, setQty] = useState(1);
   const [cost, setCost] = useState(0);
+
+  // Quick Supplier Add State
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  const [newSupplierName, setNewSupplierName] = useState('');
 
   const handleAddItem = () => {
     if (!currentProduct || qty <= 0) return;
@@ -19,6 +23,21 @@ const Purchases = () => {
     if (!prod) return;
     setItems([...items, { productId: currentProduct, qty, cost }]);
     setCurrentProduct(''); setQty(1); setCost(0);
+  };
+
+  const handleQuickAddSupplier = () => {
+    if (!newSupplierName) return;
+    const newSupp: Supplier = {
+        id: Date.now().toString(),
+        name: newSupplierName,
+        cnpj: 'N/A',
+        contact: 'N/A',
+        phone: 'N/A'
+    };
+    addSupplier(newSupp);
+    setSupplierId(newSupp.id);
+    setIsQuickAddOpen(false);
+    setNewSupplierName('');
   };
 
   const finalizePurchase = () => {
@@ -58,16 +77,25 @@ const Purchases = () => {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Fornecedor</label>
-            <select 
-              value={supplierId} 
-              onChange={e => setSupplierId(e.target.value)}
-              className="w-full p-2 border rounded border-slate-300"
-            >
-              <option value="">Selecione o Fornecedor...</option>
-              {suppliers.map(s => (
-                <option key={s.id} value={s.id}>{s.name} - {s.cnpj}</option>
-              ))}
-            </select>
+            <div className="flex gap-2">
+                <select 
+                value={supplierId} 
+                onChange={e => setSupplierId(e.target.value)}
+                className="w-full p-2 border rounded border-slate-300"
+                >
+                <option value="">Selecione o Fornecedor...</option>
+                {suppliers.map(s => (
+                    <option key={s.id} value={s.id}>{s.name} - {s.cnpj}</option>
+                ))}
+                </select>
+                <button 
+                  onClick={() => setIsQuickAddOpen(true)}
+                  className="bg-blue-600 text-white px-3 rounded hover:bg-blue-700 font-bold"
+                  title="Novo Fornecedor Rápido"
+                >
+                    +
+                </button>
+            </div>
             {suppliers.length === 0 && <p className="text-xs text-red-500 mt-1">Nenhum fornecedor cadastrado.</p>}
           </div>
 
@@ -121,6 +149,25 @@ const Purchases = () => {
           {purchases.length === 0 && <p className="text-slate-400 text-center py-10">Nenhuma compra registrada.</p>}
         </div>
       </div>
+
+      {isQuickAddOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-white p-6 rounded shadow-lg w-80">
+                  <h3 className="font-bold mb-3">Cadastro Rápido Fornecedor</h3>
+                  <input 
+                    autoFocus
+                    value={newSupplierName}
+                    onChange={(e) => setNewSupplierName(e.target.value)}
+                    placeholder="Nome da Empresa"
+                    className="w-full p-2 border border-slate-300 rounded mb-4"
+                  />
+                  <div className="flex justify-end gap-2">
+                      <button onClick={() => setIsQuickAddOpen(false)} className="text-slate-500">Cancelar</button>
+                      <button onClick={handleQuickAddSupplier} className="bg-blue-600 text-white px-4 py-1 rounded">Salvar</button>
+                  </div>
+              </div>
+          </div>
+      )}
     </div>
   );
 };

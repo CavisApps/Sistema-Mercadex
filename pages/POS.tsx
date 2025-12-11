@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useStore } from '../context/StoreContext';
 import { Product, CartItem, PaymentMethod, Customer, CashMovement, CashMovementType } from '../types';
-import { ShoppingCart, Trash2, Printer, CheckCircle, CreditCard, Banknote, QrCode, Wallet, ArrowDown, Lock } from 'lucide-react';
+import { ShoppingCart, Trash2, Printer, CheckCircle, CreditCard, Banknote, QrCode, Wallet, ArrowDown, Lock, UserCheck } from 'lucide-react';
 
 const Receipt = ({ sale, onClose }: { sale: any, onClose: () => void }) => (
   <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
@@ -174,6 +174,7 @@ const CashControlModal = ({ onClose }: { onClose: () => void }) => {
 const POS = () => {
   const { products, customers, addSale } = useStore();
   const [inputValue, setInputValue] = useState('');
+  const [quantityInput, setQuantityInput] = useState(1);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.MONEY);
@@ -195,16 +196,19 @@ const POS = () => {
       return;
     }
 
+    const qty = quantityInput > 0 ? quantityInput : 1;
+
     setCart(prev => {
       const existing = prev.find(i => i.id === product.id);
       if (existing) {
         return prev.map(i => i.id === product.id 
-          ? { ...i, quantity: i.quantity + 1, subtotal: (i.quantity + 1) * i.sellPrice } 
+          ? { ...i, quantity: i.quantity + qty, subtotal: (i.quantity + qty) * i.sellPrice } 
           : i
         );
       }
-      return [...prev, { ...product, quantity: 1, subtotal: product.sellPrice }];
+      return [...prev, { ...product, quantity: qty, subtotal: qty * product.sellPrice }];
     });
+    setQuantityInput(1); // Reset quantity after adding
   };
 
   const displayedProducts = useMemo(() => {
@@ -256,6 +260,12 @@ const POS = () => {
   const handleFinish = () => {
     if (cart.length === 0) return;
     
+    // Check for FIADO requirements
+    if (paymentMethod === PaymentMethod.FIADO && !selectedCustomer) {
+      alert("Para venda FIADO, é obrigatório selecionar um cliente!");
+      return;
+    }
+
     const sale = {
       id: Date.now().toString(),
       date: new Date().toISOString(),
@@ -291,18 +301,32 @@ const POS = () => {
 
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
           <form onSubmit={handleInputSubmit} className="flex gap-4">
+             {/* Quantity Field */}
+             <div className="w-24">
+                <label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Qtd</label>
+                <input 
+                  type="number" 
+                  min="1"
+                  value={quantityInput}
+                  onChange={(e) => setQuantityInput(parseInt(e.target.value) || 1)}
+                  className="w-full py-3 px-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-lg text-center font-bold"
+                />
+             </div>
+            
+            {/* Search Field */}
             <div className="relative flex-1">
-              <QrCode className="absolute left-3 top-3 text-slate-400" />
+              <label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Produto (Código ou Nome)</label>
+              <QrCode className="absolute left-3 top-10 text-slate-400" />
               <input
                 ref={inputRef}
                 autoFocus
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Escaneie ou digite o nome do produto..."
+                placeholder="Escaneie ou digite..."
                 className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-lg"
               />
             </div>
-            <button type="submit" className="bg-blue-600 text-white px-6 rounded-lg font-semibold hover:bg-blue-700">
+            <button type="submit" className="bg-blue-600 text-white px-6 rounded-lg font-semibold hover:bg-blue-700 mt-5">
               Adicionar
             </button>
           </form>
@@ -393,11 +417,12 @@ const POS = () => {
           </div>
 
           {/* Payment Method */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {[
               { id: PaymentMethod.MONEY, label: 'Dinheiro', icon: Banknote },
               { id: PaymentMethod.CREDIT, label: 'Crédito', icon: CreditCard },
               { id: PaymentMethod.PIX, label: 'Pix', icon: QrCode },
+              { id: PaymentMethod.FIADO, label: 'Fiado (Prazo)', icon: UserCheck },
             ].map(m => (
               <button
                 key={m.id}
